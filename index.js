@@ -191,6 +191,7 @@ export default class RNDocumentViewer extends Component {
                     source={source}
                     page={1}
                     scale={scale}
+                    fitWidth={true}
                     horizontal={false}
                     onLoadComplete={(pageCount) => {
                         this.setState({ pageCount: pageCount });
