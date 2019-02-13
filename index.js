@@ -1,11 +1,12 @@
 import React, { Component } from 'react';
-import { View, Modal, TouchableOpacity, TextInput, Icon, Image, Text } from 'react-native'
+import { View, Modal, TouchableOpacity, TextInput, Icon, Image, Text, Keyboard } from 'react-native'
 // import { RNPrint } from 'NativeModules';
 import RNFetchBlob from 'react-native-fetch-blob';
 import Pdf from 'react-native-pdf';
 import { styles } from './src/style';
 import { NativeModules } from 'react-native';
 import Toast from 'react-native-simple-toast';
+import Reactotron from 'reactotron-react-native'
 
 const { RNPrint } = NativeModules;
 
@@ -44,6 +45,7 @@ export default class RNDocumentViewer extends Component {
         this.setState({
             visible: this.props.visible
         })
+        Reactotron.log("PDF",this.pdf)
     }
 
     componentWillReceiveProps(nextProps) {
@@ -51,10 +53,30 @@ export default class RNDocumentViewer extends Component {
             visible: nextProps.visible
         })
     }
+    componentDidMount() {
+        this.keyboardDidHideListener = Keyboard.addListener(
+          'keyboardDidHide',
+          this._keyboardDidHide,
+        );
+      }
+
+    componentWillUnmount() {
+        this.keyboardDidHideListener.remove();
+    }
+
+
+    _keyboardDidHide = () => {
+        let { page } = this.state
+        if((typeof(page)) === 'number'){
+            this.pdf.setNativeProps({ page: parseInt(page)});
+        }
+    }
+    
 
     prePage = () => {
         if (this.pdf) {
             let prePage = this.state.page > 1 ? this.state.page - 1 : 1;
+            Reactotron.log("prePage",prePage)
             this.pdf.setNativeProps({ page: prePage });
             this.setState({ page: prePage });
             // console.log(`prePage: ${prePage}`);
@@ -64,6 +86,7 @@ export default class RNDocumentViewer extends Component {
     nextPage = () => {
         if (this.pdf) {
             let nextPage = this.state.page + 1 > this.state.pageCount ? this.state.pageCount : this.state.page + 1;
+            Reactotron.log("nextPage",nextPage)
             this.pdf.setNativeProps({ page: nextPage });
             this.setState({ page: nextPage });
             // console.log(`nextPage: ${nextPage}`);
@@ -126,7 +149,7 @@ export default class RNDocumentViewer extends Component {
         let source = { uri: pdfSource, cache: true };
 
         return (
-            <Modal style={{ flex: 1, backgroundColor: 'white' }} visible={visible}>
+            <Modal style={{ flex: 1, backgroundColor: 'black' }} visible={visible}>
                 <View style={styles.pdfHeaderBar}>
                     <View style={styles.leftControls}>
                         <TouchableOpacity style={styles.btn} onPress={() => this.close()}>
@@ -146,16 +169,13 @@ export default class RNDocumentViewer extends Component {
                         </TouchableOpacity>
 
                         <View style={styles.pageDetailsBox}>
-                            <View style={styles.currentPageBox}>
                                 <TextInput
+                                    onSubmitEditing={Keyboard.dismiss} 
                                     style={styles.textInput}
                                     onChangeText={(text) => {
-                                        let currentPage = text ? parseInt(text) : page;
-                                        this.setState({ page: currentPage })
-                                        this.pdf.setNativeProps({ page: currentPage });
+                                        text.length > 0 ? this.setState({ page: parseInt(text) }) : this.setState({ page: text })
                                     }}
                                     value={page.toString()} />
-                            </View>
                             <View style={styles.totalPageBox}>
                                 <Text style={styles.text}>of:</Text>
                                 <Text style={styles.text}> {pageCount} </Text>
